@@ -2,7 +2,6 @@ package org.garsooon.discordcommandalerter;
 
 import com.johnymuffin.beta.discordauth.DiscordAuthentication;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.TextChannel;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -29,16 +28,10 @@ public class RegisterCommandListener implements Listener {
         UUID uuid = player.getUniqueId();
         System.out.println("[DiscordCommandAlerter] Link command caught for " + player.getName() + " UUID=" + uuid);
 
-        TextChannel channel = plugin.getDiscordBot().getJda().getTextChannelById(plugin.getRegisterChannelId());
-        if (channel == null) {
-            System.out.println("[DiscordCommandAlerter] Register channel not found: " + plugin.getRegisterChannelId());
-            return;
-        }
-
         DiscordAuthentication discordAuth = (DiscordAuthentication) Bukkit.getPluginManager().getPlugin("DiscordAuthentication");
         if (discordAuth == null) {
             System.out.println("[DiscordCommandAlerter] DiscordAuthentication plugin not found, posting IGN only");
-            postEmbed(channel, player.getName(), null);
+            postEmbed(player.getName(), null);
             return;
         }
 
@@ -47,7 +40,7 @@ public class RegisterCommandListener implements Listener {
 
         if (!pending) {
             System.out.println("[DiscordCommandAlerter] No pending session, posting IGN only");
-            postEmbed(channel, player.getName(), null);
+            postEmbed(player.getName(), null);
             return;
         }
 
@@ -56,7 +49,7 @@ public class RegisterCommandListener implements Listener {
 
         if (rawDiscordId == null || rawDiscordId.equals("0")) {
             System.out.println("[DiscordCommandAlerter] Discord ID invalid, posting IGN only");
-            postEmbed(channel, player.getName(), null);
+            postEmbed(player.getName(), null);
             return;
         }
 
@@ -65,27 +58,27 @@ public class RegisterCommandListener implements Listener {
             discordId = Long.parseLong(rawDiscordId);
         } catch (NumberFormatException e) {
             System.out.println("[DiscordCommandAlerter] Could not parse Discord ID: " + rawDiscordId);
-            postEmbed(channel, player.getName(), null);
+            postEmbed(player.getName(), null);
             return;
         }
 
-        plugin.getDiscordBot().getJda().retrieveUserById(discordId).queue(
+        plugin.getJDA().retrieveUserById(discordId).queue(
                 user -> {
                     System.out.println("[DiscordCommandAlerter] Resolved Discord user: " + user.getName());
-                    postEmbed(channel, player.getName(), "`" + user.getName() + " (" + discordId + ")`");
+                    postEmbed(player.getName(), "`" + user.getName() + " (" + discordId + ")`");
                 },
                 error -> {
                     System.out.println("[DiscordCommandAlerter] Could not resolve Discord user for ID " + discordId + ": " + error.getMessage());
-                    postEmbed(channel, player.getName(), "`" + discordId + "`");
+                    postEmbed(player.getName(), "`" + discordId + "`");
                 }
         );
     }
 
-    private void postEmbed(TextChannel channel, String ign, String discordPart) {
+    private void postEmbed(String ign, String discordPart) {
         String desc = discordPart != null
                 ? discordPart + " is attempting to link their Discord to Minecraft IGN `" + ign + "`"
                 : "`" + ign + "` is attempting to link their Discord account.";
-        channel.sendMessage(new EmbedBuilder().setDescription(desc).setColor(EMBED_COLOR).build()).queue();
+        plugin.sendEmbed(plugin.getRegisterChannelId(), new EmbedBuilder().setDescription(desc).setColor(EMBED_COLOR));
     }
 
     private boolean isLinkCommand(String message) {

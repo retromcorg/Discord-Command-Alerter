@@ -1,7 +1,6 @@
 package org.garsooon.discordcommandalerter;
 
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.TextChannel;
 import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -41,11 +40,6 @@ public class DogKillListener implements Listener {
         AnimalTamer owner = wolf.getOwner();
         String ownerName = ownerPlayerName(owner);
         if (owner instanceof Player && ((Player) owner).getName().equals(killer.getName())) return;
-        TextChannel channel = plugin.getDiscordBot().getJda().getTextChannelById(plugin.getDogKillChannelId());
-        if (channel == null) {
-            System.out.println("[DiscordCommandAlerter] Could not find dog-kill channel " + plugin.getDogKillChannelId());
-            return;
-        }
 
         String world = killer.getWorld().getName();
         int x = killer.getLocation().getBlockX();
@@ -60,7 +54,7 @@ public class DogKillListener implements Listener {
                 .setDescription(desc)
                 .setColor(EMBED_COLOR);
 
-        channel.sendMessage(embed.build()).queue();
+        plugin.sendEmbed(plugin.getDogKillChannelId(), embed);
     }
 
     private String ownerPlayerName(AnimalTamer owner) {

@@ -10,7 +10,6 @@ import com.sk89q.worldedit.bukkit.BukkitWorld;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import com.sk89q.worldedit.regions.Region;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.TextChannel;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -39,12 +38,6 @@ public class WorldEditCommandListener implements Listener {
         Player player = event.getPlayer();
         if (!playerCanRunCommand(player, message)) return;
 
-        TextChannel channel = plugin.getDiscordBot().getJda().getTextChannelById(plugin.getWorldEditChannelId());
-        if (channel == null) {
-            System.out.println("[DiscordCommandAlerter] Could not find WorldEdit channel " + plugin.getWorldEditChannelId());
-            return;
-        }
-
         String world = player.getWorld().getName();
         int x = player.getLocation().getBlockX();
         int y = player.getLocation().getBlockY();
@@ -65,7 +58,7 @@ public class WorldEditCommandListener implements Listener {
                 .setDescription(desc.toString())
                 .setColor(EMBED_COLOR);
 
-        channel.sendMessage(embed.build()).queue();
+        plugin.sendEmbed(plugin.getWorldEditChannelId(), embed);
     }
 
     private String getSelectionString(Player player) {

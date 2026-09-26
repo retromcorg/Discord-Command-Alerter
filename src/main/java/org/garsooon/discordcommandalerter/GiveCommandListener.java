@@ -1,7 +1,6 @@
 package org.garsooon.discordcommandalerter;
 
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.TextChannel;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
@@ -28,12 +27,6 @@ public class GiveCommandListener implements Listener {
         Player player = event.getPlayer();
         if (!playerCanRunCommand(player, message)) return;
 
-        TextChannel channel = plugin.getDiscordBot().getJda().getTextChannelById(plugin.getGiveChannelId());
-        if (channel == null) {
-            System.out.println("[DiscordCommandAlerter] Could not find give channel " + plugin.getGiveChannelId());
-            return;
-        }
-
         String world = player.getWorld().getName();
         int x = player.getLocation().getBlockX();
         int y = player.getLocation().getBlockY();
@@ -48,7 +41,7 @@ public class GiveCommandListener implements Listener {
                 .setDescription(desc)
                 .setColor(EMBED_COLOR);
 
-        channel.sendMessage(embed.build()).queue();
+        plugin.sendEmbed(plugin.getGiveChannelId(), embed);
     }
 
     private boolean playerCanRunCommand(Player player, String message) {

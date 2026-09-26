@@ -1,14 +1,16 @@
 package org.garsooon.discordcommandalerter;
 
-import com.johnymuffin.discordcore.DiscordBot;
-import com.johnymuffin.discordcore.DiscordCore;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.JDA;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.config.Configuration;
+import org.retromc.discordcore.api.DiscordCoreAPI;
+import org.retromc.discordcore.v6.DiscordCorePlugin;
 
 public class DiscordCommandAlerter extends JavaPlugin {
     private static DiscordCommandAlerter instance;
-    private DiscordBot discordBot;
+    private DiscordCorePlugin discordCore;
     private String worldEditChannelId;
     private String giveChannelId;
     private String registerChannelId;
@@ -35,14 +37,13 @@ public class DiscordCommandAlerter extends JavaPlugin {
         registerChannelId = config.getString("register-channel-id", "CHANNEL_ID_HERE");
         dogKillChannelId = config.getString("dog-kill-channel-id", "CHANNEL_ID_HERE");
 
-        DiscordCore discordCore = (DiscordCore) Bukkit.getPluginManager().getPlugin("DiscordCore");
+        discordCore = (DiscordCorePlugin) Bukkit.getPluginManager().getPlugin("DiscordCore-6");
         if (discordCore == null) {
-            System.out.println("[DiscordCommandAlerter] DiscordCore not found, disabling.");
+            System.out.println("[DiscordCommandAlerter] DiscordCore-6 not found, disabling.");
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
 
-        discordBot = discordCore.getDiscordBot();
         Bukkit.getPluginManager().registerEvents(new WorldEditCommandListener(this), this);
         Bukkit.getPluginManager().registerEvents(new GiveCommandListener(this), this);
         Bukkit.getPluginManager().registerEvents(new RegisterCommandListener(this), this);
@@ -59,8 +60,16 @@ public class DiscordCommandAlerter extends JavaPlugin {
         return instance;
     }
 
-    public DiscordBot getDiscordBot() {
-        return discordBot;
+    public JDA getJDA() {
+        return discordCore.getDiscordBot().getJDA();
+    }
+
+    public void sendEmbed(String channelId, EmbedBuilder embed) {
+        try {
+            DiscordCoreAPI.sendEmbed(Long.parseLong(channelId), embed);
+        } catch (NumberFormatException e) {
+            System.out.println("[DiscordCommandAlerter] Invalid channel id: " + channelId);
+        }
     }
 
     public String getWorldEditChannelId() {

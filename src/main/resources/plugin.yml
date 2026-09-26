@@ -1,6 +1,6 @@
 name: DiscordCommandAlerter
 main: org.garsooon.discordcommandalerter.DiscordCommandAlerter
-version: 1.0.2
+version: 1.1.0
 author: Garsooon
-depend: [DiscordCore]
+depend: [DiscordCore-6]
 softdepend: [WorldEdit, DiscordAuthentication]
