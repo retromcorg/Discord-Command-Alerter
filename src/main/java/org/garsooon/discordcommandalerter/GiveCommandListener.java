@@ -2,6 +2,8 @@ package org.garsooon.discordcommandalerter;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.TextChannel;
+import org.bukkit.Bukkit;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -24,6 +26,7 @@ public class GiveCommandListener implements Listener {
         if (!isGiveCommand(message)) return;
 
         Player player = event.getPlayer();
+        if (!playerCanRunCommand(player, message)) return;
 
         TextChannel channel = plugin.getDiscordBot().getJda().getTextChannelById(plugin.getGiveChannelId());
         if (channel == null) {
@@ -46,6 +49,23 @@ public class GiveCommandListener implements Listener {
                 .setColor(EMBED_COLOR);
 
         channel.sendMessage(embed.build()).queue();
+    }
+
+    private boolean playerCanRunCommand(Player player, String message) {
+        try {
+            String name = message.trim().split("\\s+")[0];
+            if (name.startsWith("/")) name = name.substring(1);
+
+            PluginCommand command = Bukkit.getPluginCommand(name);
+            String permission = command != null ? command.getPermission() : null;
+
+            if (permission != null && !permission.isEmpty()) {
+                return player.hasPermission(permission);
+            }
+            return player.isOp();
+        } catch (Throwable t) {
+            return true;
+        }
     }
 
     private boolean isGiveCommand(String message) {

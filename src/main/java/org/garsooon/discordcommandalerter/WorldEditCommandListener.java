@@ -1,6 +1,11 @@
 package org.garsooon.discordcommandalerter;
 
+import com.sk89q.minecraft.util.commands.CommandPermissions;
+import com.sk89q.minecraft.util.commands.CommandsManager;
+import com.sk89q.minecraft.util.commands.NestedCommand;
+import com.sk89q.worldedit.LocalPlayer;
 import com.sk89q.worldedit.LocalSession;
+import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.bukkit.BukkitWorld;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import com.sk89q.worldedit.regions.Region;
@@ -13,6 +18,9 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 
 import java.awt.Color;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.Map;
 
 public class WorldEditCommandListener implements Listener {
     private static final Color EMBED_COLOR = new Color(0xAA0000);
@@ -29,6 +37,7 @@ public class WorldEditCommandListener implements Listener {
         if (!isWorldEditCommand(message)) return;
 
         Player player = event.getPlayer();
+        if (!playerCanRunCommand(player, message)) return;
 
         TextChannel channel = plugin.getDiscordBot().getJda().getTextChannelById(plugin.getWorldEditChannelId());
         if (channel == null) {
@@ -76,6 +85,64 @@ public class WorldEditCommandListener implements Listener {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private boolean playerCanRunCommand(Player player, String message) {
+        try {
+            WorldEditPlugin we = (WorldEditPlugin) Bukkit.getPluginManager().getPlugin("WorldEdit");
+            if (we == null) return true;
+
+            WorldEdit worldEdit = we.getWorldEdit();
+
+            Field commandsField = WorldEdit.class.getDeclaredField("commands");
+            commandsField.setAccessible(true);
+            CommandsManager<?> commandsManager = (CommandsManager<?>) commandsField.get(worldEdit);
+
+            Field mapField = CommandsManager.class.getDeclaredField("commands");
+            mapField.setAccessible(true);
+            Map<Method, Map<String, Method>> commandMap =
+                    (Map<Method, Map<String, Method>>) mapField.get(commandsManager);
+
+            LocalPlayer localPlayer = we.wrapPlayer(player);
+
+            String[] tokens = message.trim().split("\\s+");
+            tokens[0] = tokens[0].substring(1);
+
+            return isPermitted(commandMap, null, tokens, 0, localPlayer);
+        } catch (Throwable t) {
+            return true;
+        }
+    }
+
+    private boolean isPermitted(Map<Method, Map<String, Method>> commandMap, Method parent,
+                                String[] tokens, int level, LocalPlayer player) {
+        if (level >= tokens.length) return true;
+
+        Map<String, Method> levelCommands = commandMap.get(parent);
+        if (levelCommands == null) return true;
+
+        String name = tokens[level].toLowerCase();
+        Method method = levelCommands.get(name);
+        if (method == null) method = levelCommands.get("/" + name);
+        if (method == null) return true;
+
+        CommandPermissions perms = method.getAnnotation(CommandPermissions.class);
+        if (perms != null) {
+            boolean allowed = false;
+            for (String node : perms.value()) {
+                if (player.hasPermission(node)) {
+                    allowed = true;
+                    break;
+                }
+            }
+            if (!allowed) return false;
+        }
+
+        if (method.isAnnotationPresent(NestedCommand.class)) {
+            return isPermitted(commandMap, method, tokens, level + 1, player);
+        }
+        return true;
     }
 
     private boolean isWorldEditCommand(String message) {
